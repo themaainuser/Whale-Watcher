@@ -16,7 +16,13 @@ interface AlchemyActivity {
   asset?: string;
   hash?: string;
   blockNum?: string;
+  /** Legacy field name; real Address Activity payloads carry log.logIndex. */
   logId?: string;
+  /** Full log receipt — logIndex is the authoritative per-transfer position. */
+  log?: {
+    logIndex?: string;
+    transactionHash?: string;
+  } | null;
   erc721TokenId?: string;
   category?: string;
   rawContract?: {
@@ -244,7 +250,7 @@ export function toNormalizedTransfer(activity: AlchemyActivity): NormalizedTrans
     chain: "ethereum",
     asset,
     txHash: activity.hash.toLowerCase(),
-    logIndex: deriveLogIndex(activity.logId),
+    logIndex: deriveLogIndex(activity),
     blockHeight,
     from: activity.fromAddress,
     to: typeof activity.toAddress === "string" ? activity.toAddress : undefined,
@@ -255,19 +261,27 @@ export function toNormalizedTransfer(activity: AlchemyActivity): NormalizedTrans
 }
 
 /**
- * Alchemy logId format is "<txHash>_<logIndexHex>"; native transfers have no
- * log entry, so they get -1 to keep them out of collision with real logs at
- * index 0 under the (chain, tx_hash, log_index) uniqueness constraint.
- *
- * The suffix is hex per Alchemy docs; if it ever arrives as plain decimal the
- * parsed values stay small and distinct enough that dedup still works.
+ * Per-transfer log position under the (chain, tx_hash, log_index) dedup key.
+ * Real Address Activity payloads carry log.logIndex as a hex string
+ * (confirmed against a live payload 2026-09-02); the legacy "<txHash>_<hex>"
+ * logId form is kept as a fallback. Native ETH transfers have no log entry —
+ * they fall back to logIndex 0 in the DB layer, which is safe because a
+ * native transfer is unique per tx (one value field, not per-log).
  */
-function deriveLogIndex(logId: string | undefined): number | undefined {
-  if (typeof logId !== "string" || logId.length === 0) return undefined;
-  const separatorIndex = logId.lastIndexOf("_");
-  const suffix = separatorIndex >= 0 ? logId.slice(separatorIndex + 1) : logId;
-  const parsed = Number.parseInt(suffix, 16);
-  return Number.isNaN(parsed) ? undefined : parsed;
+function deriveLogIndex(activity: AlchemyActivity): number | undefined {
+  const fromLog =
+    typeof activity.log?.logIndex === "string" && /^0x[0-9a-fA-F]+$/.test(activity.log.logIndex)
+      ? Number.parseInt(activity.log.logIndex, 16)
+      : NaN;
+  if (Number.isFinite(fromLog)) return fromLog;
+
+  if (typeof activity.logId === "string" && activity.logId.length > 0) {
+    const separatorIndex = activity.logId.lastIndexOf("_");
+    const suffix = separatorIndex >= 0 ? activity.logId.slice(separatorIndex + 1) : activity.logId;
+    const parsed = Number.parseInt(suffix, 16);
+    if (!Number.isNaN(parsed)) return parsed;
+  }
+  return undefined;
 }
 
 function deriveBlockHeight(blockNum: string | undefined): number | undefined {

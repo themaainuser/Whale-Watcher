@@ -86,6 +86,28 @@ describe("toNormalizedTransfer", () => {
     assert.equal(t.asset, "USDC");
     assert.equal(t.amount, 1500);
   });
+  it("uses log.logIndex from a real Address Activity payload (regression 2026-09-02)", () => {
+    // Exact field shape from a live Alchemy delivery: no logId, log.logIndex hex.
+    const t = toNormalizedTransfer({
+      ...base,
+      asset: "USDC",
+      value: 293.092129,
+      category: "token",
+      log: {
+        logIndex: "0x6e",
+        transactionHash: base.hash,
+      },
+      rawContract: {
+        rawValue: "0x0000000000000000000000000000000000000000000000000000000011783b21",
+        address: USDC,
+        decimals: 6,
+      },
+    });
+    assert.ok(t);
+    assert.equal(t.asset, "USDC");
+    assert.equal(t.amount, 293.092129);
+    assert.equal(t.logIndex, 0x6e);
+  });
   it("rejects ERC-20 activity from unknown contracts (spam-token defense)", () => {
     const t = toNormalizedTransfer({
       ...base,
