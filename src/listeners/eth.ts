@@ -185,11 +185,34 @@ export function parseBaseUnits(raw: string | undefined, decimals: number): numbe
  * symbol() == "USDC", and counterfeit spam tokens airdropped to exchange
  * wallets are routine. An unknown contract is rejected (fail-closed) rather
  * than guessed at from its symbol.
+ *
+ * Addresses and decimals taken from CoinGecko's platform registry
+ * (api.coingecko.com/api/v3/coins/<id> -> platforms.ethereum), 2026-09-02.
+ * A token alerts only if it is ALSO in prices.ts COINGECKO_IDS and has an
+ * asset_thresholds row — three layers must agree.
  */
 const CONTRACTS: Record<string, { asset: string; decimals: number }> = {
+  // stablecoins
   "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48": { asset: "USDC", decimals: 6 },
   "0xdac17f958d2ee523a2206206994597c13d831ec7": { asset: "USDT", decimals: 6 },
+  "0x6b175474e89094c44da98b954eedeac495271d0f": { asset: "DAI", decimals: 18 },
+  // wrapped/native majors
   "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2": { asset: "WETH", decimals: 18 },
+  "0x2260fac5e5542a773aa44fbcfedf7c193bc2c599": { asset: "WBTC", decimals: 8 },
+  // large-cap ERC-20s commonly held by exchange cold wallets
+  "0x514910771af9ca656af840dff83e8264ecf986ca": { asset: "LINK", decimals: 18 },
+  "0x1f9840a85d5af5bf1d1762f925bdaddc4201f984": { asset: "UNI", decimals: 18 },
+  "0x7fc66500c84a76ad7e9c93437bfc5ac33e2ddae9": { asset: "AAVE", decimals: 18 },
+  "0xd533a949740bb3306d119cc777fa900ba034cd52": { asset: "CRV", decimals: 18 },
+  "0x5a98fcbea516cf06857215779fd812ca3bef1b32": { asset: "LDO", decimals: 18 },
+  "0x9f8f72aa9304c8b593d555f12ef6589cc3a579a2": { asset: "MKR", decimals: 18 },
+  "0x95ad61b0a150d79219dcf64e1e6cc01f0b64c4ce": { asset: "SHIB", decimals: 18 },
+  "0x6982508145454ce325ddbe47a25d4ec3d2311933": { asset: "PEPE", decimals: 18 },
+  "0x455e53cbb86018ac2b8092fdcd39d8444affc3f6": { asset: "POL", decimals: 18 },
+  "0xec53bf9167f50cdeb3ae105f56099aaab9061f83": { asset: "EIGEN", decimals: 18 },
+  "0x57e114b691db790c35207b2e685d4a43181e6061": { asset: "ENA", decimals: 18 },
+  "0x7a58c0be72be218b41c608b7fe7c5bb630736c71": { asset: "PEOPLE", decimals: 18 },
+  "0x6bef15d938d4e72056ac92ea4bdd0d76b1c4ad29": { asset: "PROVE", decimals: 18 },
 };
 
 interface RawContract {

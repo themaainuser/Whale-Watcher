@@ -6,6 +6,24 @@ const COINGECKO_IDS: Record<string, string> = {
   XRP: "ripple",
   USDT: "tether",
   USDC: "usd-coin",
+  // ERC-20s in the webhook contract allowlist (listeners/eth.ts CONTRACTS) —
+  // the three layers (allowlist, this map, asset_thresholds) must agree.
+  DAI: "dai",
+  WETH: "weth",
+  WBTC: "wrapped-bitcoin",
+  LINK: "chainlink",
+  UNI: "uniswap",
+  AAVE: "aave",
+  CRV: "curve-dao-token",
+  LDO: "lido-dao",
+  MKR: "maker",
+  SHIB: "shiba-inu",
+  PEPE: "pepe",
+  POL: "polygon-ecosystem-token",
+  EIGEN: "eigenlayer",
+  ENA: "ethena",
+  PEOPLE: "constitutiondao",
+  PROVE: "succinct",
 };
 
 const TTL_MS = 5 * 60 * 1000;
