@@ -9,6 +9,16 @@ import { getUsdPrice } from "./prices.js";
 
 const EXCHANGE_PREFIX = "exchange_";
 
+// Alert recipients need to judge freshness: BTC polling lags up to a minute
+// and the outbox re-sends stale pending alerts after outages, so a message
+// without a time reads like a live signal even when it is a delayed replay.
+const TIME_FMT = new Intl.DateTimeFormat("en-GB", {
+  timeZone: "UTC",
+  hour: "2-digit",
+  minute: "2-digit",
+  hourCycle: "h23",
+});
+
 function isEndpoint(categories: Set<Category>): boolean {
   for (const c of categories) {
     if (c.startsWith(EXCHANGE_PREFIX)) return true;
@@ -101,7 +111,8 @@ export async function processTransfer(
     ? `${short(t.from)} → ${short(t.to)}${tagPart(t)} [${direction}]`
     : `${short(t.from)} [${direction}]`;
   const line3 = explorerUrl(t.chain, t.txHash);
-  const message = `${line1}\n${line2}\n${line3}`;
+  const line4 = `🕐 ${TIME_FMT.format(t.occurredAt)} UTC`;
+  const message = `${line1}\n${line2}\n${line3}\n${line4}`;
 
   // One transaction: the transfer row and its pending alert commit together,
   // so a crash between them can never orphan an unalerted transfer.

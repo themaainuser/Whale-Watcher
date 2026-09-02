@@ -76,6 +76,10 @@ export function startBtcListener(onTransfer: (t: NormalizedTransfer) => Promise<
     // already processed; a shorter chain means the last block(s) were dropped.
     if (lastHeight === null) {
       lastHeight = tip;
+      // Heights live only in memory, so a restart picks up from the tip and
+      // blocks emitted while the process was down are never scanned. Log it:
+      // a silent coverage gap looks like a missed live signal.
+      console.log(`[btc] listening from tip height ${tip}; downtime blocks are not backfilled`);
       return;
     }
     for (let height = lastHeight + 1; height <= tip; height += 1) {

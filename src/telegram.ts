@@ -12,7 +12,12 @@ export async function sendTelegramMessage(text: string): Promise<boolean> {
       body: JSON.stringify({ chat_id: chatId, text }),
     });
     if (!res.ok) {
-      console.error(`telegram sendMessage failed with status ${res.status}`);
+      // Telegram's body carries the concrete config mistake (e.g. "chat not
+      // found", "Unauthorized"); a bare status leaves setup failures cryptic.
+      const detail = (await res.text().catch(() => "")).slice(0, 300);
+      console.error(
+        `telegram sendMessage failed with status ${res.status}${detail ? `: ${detail}` : ""}`,
+      );
       return false;
     }
     return true;

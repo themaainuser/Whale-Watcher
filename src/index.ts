@@ -3,6 +3,7 @@ import type { NormalizedTransfer } from "./types.js";
 import { markAlertSent, pendingAlerts, pool } from "./db.js";
 import { processTransfer } from "./enrich.js";
 import { sendTelegramMessage } from "./telegram.js";
+import { ETHERSCAN_API_KEY } from "./etherscan.js";
 import { startBtcListener } from "./listeners/btc.js";
 import { startEthWebhook } from "./listeners/eth.js";
 import { startXrplListener } from "./listeners/xrpl.js";
@@ -10,6 +11,51 @@ import { startXrplListener } from "./listeners/xrpl.js";
 type TransferHandler = (t: NormalizedTransfer) => Promise<void>;
 
 const SHUTDOWN_GRACE_MS = 15_000;
+
+/** Fail fast with an actionable message instead of a raw pg connection error. */
+async function ensureDatabase(): Promise<void> {
+  if (!process.env.DATABASE_URL) {
+    console.error(
+      "DATABASE_URL is not set — copy .env.example to .env and point it at your Postgres.",
+    );
+    process.exit(1);
+  }
+  try {
+    await pool.query("SELECT 1");
+  } catch (error) {
+    console.error("Could not reach the database at the DATABASE_URL in .env.", error);
+    process.exit(1);
+  }
+}
+
+/**
+ * One-glance answer to "is it actually configured?": the setup checklist is
+ * spread across .env variables, so a startup summary surfaces dry-run mode,
+ * the disabled ETH webhook, and missing optional keys before alerts flow.
+ */
+function logStartupStatus(): void {
+  const telegramLive =
+    Boolean(process.env.TELEGRAM_BOT_TOKEN) && Boolean(process.env.TELEGRAM_CHAT_ID);
+  console.log(
+    "[status] telegram:",
+    telegramLive
+      ? "live"
+      : "dry-run — set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID in .env to send real alerts",
+  );
+  console.log(
+    "[status] ethereum webhook:",
+    process.env.ALCHEMY_SIGNING_KEY
+      ? `listening on :${process.env.PORT ?? 8080}`
+      : "disabled — ALCHEMY_SIGNING_KEY not set (see Alchemy dashboard, Signature section)",
+  );
+  console.log(
+    "[status] etherscan block times:",
+    ETHERSCAN_API_KEY
+      ? "enabled"
+      : "disabled — set ETHERSCAN_API_KEY for accurate ETH timestamps",
+  );
+  console.log("[status] bitcoin: polling, xrpl: streaming");
+}
 
 function makeHandler(inFlight: Set<Promise<void>>): TransferHandler {
   return async (t: NormalizedTransfer): Promise<void> => {
@@ -60,6 +106,7 @@ export async function drainOutbox(): Promise<void> {
 }
 
 async function smoke(): Promise<void> {
+  await ensureDatabase();
   const fake: NormalizedTransfer = {
     chain: "ethereum",
     asset: "ETH",
@@ -82,13 +129,14 @@ async function smoke(): Promise<void> {
 }
 
 async function main(): Promise<void> {
-  await pool.query("SELECT 1");
+  await ensureDatabase();
   const inFlight = new Set<Promise<void>>();
   const handler = makeHandler(inFlight);
   startXrplListener(handler);
   startBtcListener(handler);
   startEthWebhook(handler);
   void drainOutbox(); // flush anything pending from a previous run
+  logStartupStatus();
   console.log("whale-watcher running");
 
   const outboxTimer = setInterval(() => void drainOutbox(), 60_000);
