@@ -4,7 +4,7 @@ import type { LabelUpsert } from "../types.js";
 const TOML_URL = "https://ripple.com/.well-known/xrp-ledger.toml";
 const BATCH_SIZE = 500;
 
-interface TomlAccount {
+export interface TomlAccount {
   address?: string;
   name?: string;
   desc?: string;
@@ -16,7 +16,7 @@ interface TomlAccount {
  * literal strings ('...'), and multiline arrays. Good enough for the
  * well-known file's flat key = "value" shape.
  */
-function parseAccounts(text: string): TomlAccount[] {
+export function parseAccounts(text: string): TomlAccount[] {
   const accounts: TomlAccount[] = [];
   let current: TomlAccount | null = null;
 

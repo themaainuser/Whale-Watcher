@@ -30,7 +30,7 @@ interface AlchemyWebhookBody {
   event?: { activity?: AlchemyActivity[] };
 }
 
-export function startEthWebhook(onTransfer: (t: NormalizedTransfer) => Promise<void>): void {
+export function startEthWebhook(onTransfer: (t: NormalizedTransfer) => Promise<void>): http.Server | null {
   const port = Number(process.env.PORT ?? 8080);
   const signingKey = process.env.ALCHEMY_SIGNING_KEY;
 
@@ -40,7 +40,7 @@ export function startEthWebhook(onTransfer: (t: NormalizedTransfer) => Promise<v
       "[eth] ALCHEMY_SIGNING_KEY not set — Ethereum webhook disabled " +
         "(set it in .env from the Alchemy dashboard, Signature section)",
     );
-    return;
+    return null;
   }
 
   const server = http.createServer((req, res) => {
@@ -64,6 +64,7 @@ export function startEthWebhook(onTransfer: (t: NormalizedTransfer) => Promise<v
   server.listen(port, () => {
     console.log(`[eth] webhook listening on :${port}`);
   });
+  return server;
 }
 
 async function handleRequest(

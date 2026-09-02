@@ -245,7 +245,10 @@ export function decodeCurrencyCode(raw: string): string | undefined {
     // Standard layout first: 24 hex zeros, 3 ASCII bytes, 10 hex zeros.
     if (/^0{24}[\x20-\x7e]{6}0{10}$/.test(raw)) {
       const iso = Buffer.from(raw.slice(24, 30), "hex").toString("ascii");
-      if (iso.length === 3 && iso !== "XRP") return iso;
+      // Length-3 alone isn't enough: an all-zero code decodes to NUL bytes.
+      if (iso.length === 3 && /^[\x20-\x7e]+$/.test(iso) && iso !== "XRP") {
+        return iso;
+      }
     }
 
     const buf = Buffer.from(raw, "hex");

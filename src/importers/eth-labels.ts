@@ -44,7 +44,7 @@ interface EthLabelRow {
   nameTag?: string;
 }
 
-function inferCategory(text: string): Category {
+export function inferCategory(text: string): Category {
   const t = text.toLowerCase();
   // Word-boundary match: "dep" as a bare token only (avoids matching
   // "deployment", "dependable", etc. that the old /dep\b/… mix allowed).
@@ -66,7 +66,7 @@ function inferCategory(text: string): Category {
   return "unknown";
 }
 
-function venueName(raw: string): string {
+export function venueName(raw: string): string {
   // Strip a trailing deposit suffix only when it starts at a word boundary,
   // e.g. "Kraken Deposit 12" -> "Kraken"; never mid-word.
   let v = raw.replace(/\s+\bdep(osit)?\w*.*$/i, "");
