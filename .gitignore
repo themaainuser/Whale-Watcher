@@ -1,0 +1,15 @@
+node_modules/
+dist/
+.env
+*.log
+
+# local editor / OS noise
+.obsidian/
+.claude/
+~$*
+Thumbs.db
+desktop.ini
+
+# scratch test files (recreatable one-off verification scripts)
+scratch-test-*.mjs
+scratch-debug-*.mjs
